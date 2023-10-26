@@ -6,6 +6,71 @@
 // Coloque aqui as suas modificações, p.ex. includes, defines variáveis, 
 // estruturas e funções
 
+#include <sys/time.h>
+#include <signal.h>
+
+struct sigaction timer_action;
+struct itimerval timer;
+
+void timer_handler (int signum)
+{
+    if(taskExec->quantum == 0 || task_get_ret(taskExec) <= 0)
+    {
+        task_yeld();
+    }
+    taskExec->quantum--;
+}
+
+void task_set_eet(task_t *task, int et)
+{
+    if(!task)
+    {
+        task = taskExec;
+    }
+    
+    task->expected_end_time = et;
+}
+
+int task_get_eet(task_t *task)
+{
+    if(!task)
+    {
+        task = taskExec;
+    }
+
+    return (task->expected_end_time);
+}
+
+int task_get_ret(task_t *task)
+{
+    if(!task)
+    {
+        task = taskExec;
+    }
+
+    return (task->expected_end_time - task->running_time);
+    
+}
+
+task_t * scheduler() {
+    // STRF scheduler
+    if ( readyQueue != NULL ) {
+        task_t* next_task = readyQueue;
+        task_t* selector = readyQueue->next;
+
+        while(selector)
+        {
+            if(task_get_ret(next_task) > task_get_ret(selector))
+            {
+                next_task = selector;
+            }
+            selector = selector->next;
+        }
+        next_task->quantum = 20;
+        return next_task;
+    }
+    return NULL;
+}
 
 // ****************************************************************************
 
@@ -20,6 +85,29 @@ void before_ppos_init () {
 
 void after_ppos_init () {
     // put your customization here
+    // registra a ação para o sinal de timer SIGALRM
+    timer_action.sa_handler = timer_handler ;
+    sigemptyset (&timer_action.sa_mask) ;
+    timer_action.sa_flags = 0 ;
+    if (sigaction (SIGALRM, &timer_action, 0) < 0)
+    {
+      perror ("Erro em sigaction: ") ;
+      exit (1) ;
+    }
+
+    // ajusta valores do temporizador
+    timer.it_value.tv_usec = 0 ;      // primeiro disparo, em micro-segundos
+    timer.it_value.tv_sec  = 0 ;      // primeiro disparo, em segundos
+    timer.it_interval.tv_usec = 1 ;   // disparos subsequentes, em micro-segundos
+    timer.it_interval.tv_sec  = 0 ;   // disparos subsequentes, em segundos
+
+    // arma o temporizador ITIMER_REAL (vide man setitimer)
+    if (setitimer (ITIMER_REAL, &timer, 0) < 0)
+    {
+      perror ("Erro em setitimer: ") ;
+      exit (1) ;
+    }
+
 #ifdef DEBUG
     printf("\ninit - AFTER");
 #endif
@@ -69,6 +157,10 @@ void after_task_switch ( task_t *task ) {
 
 void before_task_yield () {
     // put your customization here
+    if(task_get_ret(taskExec) > 0)
+    {
+        task_join(taskExec);
+    }
 #ifdef DEBUG
     printf("\ntask_yield - BEFORE - [%d]", taskExec->id);
 #endif
@@ -396,12 +488,12 @@ int after_mqueue_msgs (mqueue_t *queue) {
     return 0;
 }
 
-task_t * scheduler() {
-    // FCFS scheduler
-    if ( readyQueue != NULL ) {
-        return readyQueue;
-    }
-    return NULL;
-}
+// task_t * scheduler() {
+//     // FCFS scheduler
+//     if ( readyQueue != NULL ) {
+//         return readyQueue;
+//     }
+//     return NULL;
+// }
 
 
