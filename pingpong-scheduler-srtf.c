@@ -70,17 +70,16 @@ int main (int argc, char *argv[])
   int i, aux_time;
   
   printf ("main: inicio\n");
-
   ppos_init () ;
-  
 
   // waiting for the first microsecond
   while (systime() <= 0) 
   {
     printf("%d", systime());
   }
+
   // estimate how many iterations is a microsecond
-  printf("teste");
+  printf("teste:%d\n", systime());
   aux_time = systime() + 1;
   while (systime() < aux_time)
     one_tick++;

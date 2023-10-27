@@ -14,9 +14,13 @@ struct itimerval timer;
 
 void timer_handler (int signum)
 {
-    if(taskExec->quantum == 0 || task_get_ret(taskExec) <= 0)
+    systemTime++;
+    //printf("id:%d\n", taskExec->id);
+    //printf("syst:%d\n", systime());
+    if((taskExec->quantum == 0 || task_get_ret(taskExec) <= 0) && preemption == 1)
     {
-        task_yeld();
+        printf("quantum:%d\n", taskExec->quantum);
+        task_yield();
     }
     taskExec->quantum--;
 }
@@ -57,8 +61,7 @@ task_t * scheduler() {
     if ( readyQueue != NULL ) {
         task_t* next_task = readyQueue;
         task_t* selector = readyQueue->next;
-
-        while(selector)
+        while(selector && selector != readyQueue)
         {
             if(task_get_ret(next_task) > task_get_ret(selector))
             {
@@ -86,6 +89,7 @@ void before_ppos_init () {
 void after_ppos_init () {
     // put your customization here
     // registra a ação para o sinal de timer SIGALRM
+    preemption = 0;
     timer_action.sa_handler = timer_handler ;
     sigemptyset (&timer_action.sa_mask) ;
     timer_action.sa_flags = 0 ;
@@ -94,20 +98,17 @@ void after_ppos_init () {
       perror ("Erro em sigaction: ") ;
       exit (1) ;
     }
-
     // ajusta valores do temporizador
-    timer.it_value.tv_usec = 0 ;      // primeiro disparo, em micro-segundos
+    timer.it_value.tv_usec = 1000 ;      // primeiro disparo, em micro-segundos
     timer.it_value.tv_sec  = 0 ;      // primeiro disparo, em segundos
-    timer.it_interval.tv_usec = 1 ;   // disparos subsequentes, em micro-segundos
-    timer.it_interval.tv_sec  = 0 ;   // disparos subsequentes, em segundos
-
+    timer.it_interval.tv_usec = 1000 ;   // disparos subsequentes, em micro-segundos
+    timer.it_interval.tv_sec  = 0 ;   // disparos subsequentes, em segund
     // arma o temporizador ITIMER_REAL (vide man setitimer)
     if (setitimer (ITIMER_REAL, &timer, 0) < 0)
     {
       perror ("Erro em setitimer: ") ;
       exit (1) ;
     }
-
 #ifdef DEBUG
     printf("\ninit - AFTER");
 #endif
