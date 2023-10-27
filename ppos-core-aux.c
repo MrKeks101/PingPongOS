@@ -15,13 +15,14 @@ struct itimerval timer;
 void timer_handler (int signum)
 {
     systemTime++;
-    //printf("id:%d\n", taskExec->id);
-    //printf("syst:%d\n", systime());
+
     if((taskExec->quantum == 0 || task_get_ret(taskExec) <= 0) && preemption == 1)
     {
+        printf("ret:%d\n", task_get_ret(taskExec));
         printf("quantum:%d\n", taskExec->quantum);
         task_yield();
     }
+    taskExec->running_time++;
     taskExec->quantum--;
 }
 
@@ -58,20 +59,27 @@ int task_get_ret(task_t *task)
 
 task_t * scheduler() {
     // STRF scheduler
+    printf("sch - inicio\n");
     if ( readyQueue != NULL ) {
+        printf("readyqueue != null\n");
         task_t* next_task = readyQueue;
         task_t* selector = readyQueue->next;
         while(selector && selector != readyQueue)
         {
+            printf("sch - while\n");
             if(task_get_ret(next_task) > task_get_ret(selector))
             {
                 next_task = selector;
             }
             selector = selector->next;
         }
+        printf("passou do while\n");
         next_task->quantum = 20;
+        taskExec = next_task;
+        printf("task id:%d\n", next_task->id);
         return next_task;
     }
+    printf("return null\n");
     return NULL;
 }
 
@@ -89,7 +97,8 @@ void before_ppos_init () {
 void after_ppos_init () {
     // put your customization here
     // registra a ação para o sinal de timer SIGALRM
-    preemption = 0;
+    preemption = 1;
+    task_set_eet(taskExec, 999);
     timer_action.sa_handler = timer_handler ;
     sigemptyset (&timer_action.sa_mask) ;
     timer_action.sa_flags = 0 ;
@@ -158,10 +167,10 @@ void after_task_switch ( task_t *task ) {
 
 void before_task_yield () {
     // put your customization here
-    if(task_get_ret(taskExec) > 0)
-    {
-        task_join(taskExec);
-    }
+    //if(task_get_ret(taskExec) > 0)
+    //{
+    //    task_join(taskExec);
+    //}
 #ifdef DEBUG
     printf("\ntask_yield - BEFORE - [%d]", taskExec->id);
 #endif
