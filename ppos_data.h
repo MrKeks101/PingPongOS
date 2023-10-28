@@ -28,6 +28,8 @@ typedef struct task_t
    int quantum;
    int running_time;
    int expected_end_time;
+   int start_time;
+   int activations;
    
 } task_t ;
 

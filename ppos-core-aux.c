@@ -74,6 +74,8 @@ task_t * scheduler() {
             preemption = 0;
         else
             preemption = 1;
+            
+        next_task->activations++;
 
         return next_task;
     }
@@ -129,6 +131,8 @@ void before_task_create (task_t *task ) {
 
 void after_task_create (task_t *task ) {
     // put your customization here
+    task->start_time = systime();
+    task->activations = 0;
 #ifdef DEBUG
     printf("\ntask_create - AFTER - [%d]", task->id);
 #endif
@@ -136,6 +140,7 @@ void after_task_create (task_t *task ) {
 
 void before_task_exit () {
     // put your customization here
+    printf("Task %d exit: Execution Time %d ms, processor time %d ms, %d activations\n\n", taskExec->id, systime() - taskExec->start_time, taskExec->running_time, taskExec->activations);
 #ifdef DEBUG
     printf("\ntask_exit - BEFORE - [%d]", taskExec->id);
 #endif
