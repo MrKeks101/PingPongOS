@@ -140,7 +140,7 @@ void after_task_create (task_t *task ) {
 
 void before_task_exit () {
     // put your customization here
-    printf("Task %d exit: Execution Time %d ms, processor time %d ms, %d activations\n\n", taskExec->id, systime() - taskExec->start_time, taskExec->running_time, taskExec->activations);
+    printf("Task %d exit: execution time %d ms, processor time %d ms, %d activations\n\n", taskExec->id, systime() - taskExec->start_time, taskExec->running_time, taskExec->activations);
 #ifdef DEBUG
     printf("\ntask_exit - BEFORE - [%d]", taskExec->id);
 #endif
