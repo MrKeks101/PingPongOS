@@ -46,6 +46,10 @@ da tarefa estarem alocadas e devidademente inicializadas. Após o retorno dessa 
 nova tarefa é incluída na fila de tarefas prontas.
 */
 
+void task_set_eet(task_t *task, int et);
+int task_get_eet(task_t *task);
+int task_get_ret(task_t *task);
+
 // Inicializa o sistema operacional; deve ser chamada no inicio do main()
 void ppos_init ();
 void before_ppos_init ();

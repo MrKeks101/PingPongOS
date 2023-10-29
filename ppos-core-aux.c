@@ -71,9 +71,9 @@ task_t * scheduler() {
         next_task->quantum = 20;
 
         if(next_task->id == taskDisp->id)
-            preemption = 0;
+            PPOS_PREEMPT_DISABLE
         else
-            preemption = 1;
+            PPOS_PREEMPT_ENABLE
             
         next_task->activations++;
 
@@ -95,8 +95,7 @@ void before_ppos_init () {
 
 void after_ppos_init () {
     // put your customization here
-    // registra a ação para o sinal de timer SIGALRM
-    //preemption = 1;
+
     task_set_eet(taskExec, 999);
     timer_action.sa_handler = timer_handler ;
     sigemptyset (&timer_action.sa_mask) ;
@@ -106,12 +105,12 @@ void after_ppos_init () {
       perror ("Erro em sigaction: ") ;
       exit (1) ;
     }
-    // ajusta valores do temporizador
-    timer.it_value.tv_usec = 1000 ;      // primeiro disparo, em micro-segundos
-    timer.it_value.tv_sec  = 0 ;      // primeiro disparo, em segundos
-    timer.it_interval.tv_usec = 1000 ;   // disparos subsequentes, em micro-segundos
-    timer.it_interval.tv_sec  = 0 ;   // disparos subsequentes, em segund
-    // arma o temporizador ITIMER_REAL (vide man setitimer)
+
+    timer.it_value.tv_usec = 1000 ;   
+    timer.it_value.tv_sec  = 0 ;      
+    timer.it_interval.tv_usec = 1000 ;
+    timer.it_interval.tv_sec  = 0 ;
+
     if (setitimer (ITIMER_REAL, &timer, 0) < 0)
     {
       perror ("Erro em setitimer: ") ;
@@ -169,10 +168,6 @@ void after_task_switch ( task_t *task ) {
 
 void before_task_yield () {
     // put your customization here
-    //if(task_get_ret(taskExec) > 0)
-    //{
-    //    task_join(taskExec);
-    //}
 #ifdef DEBUG
     printf("\ntask_yield - BEFORE - [%d]", taskExec->id);
 #endif

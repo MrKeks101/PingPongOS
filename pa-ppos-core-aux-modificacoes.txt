@@ -1,0 +1,126 @@
+// ****************************************************************************
+// Coloque aqui as suas modificações, p.ex. includes, defines variáveis, 
+// estruturas e funções
+
+#include <sys/time.h>
+#include <signal.h>
+
+struct sigaction timer_action;
+struct itimerval timer;
+
+void timer_handler (int signum)
+{
+    systemTime++;
+
+    if((taskExec->quantum == 0 || task_get_ret(taskExec) <= 0) && preemption == 1)
+    {
+        task_yield();
+    }
+    taskExec->running_time++;
+    taskExec->quantum--;
+}
+
+void task_set_eet(task_t *task, int et)
+{
+    if(!task)
+    {
+        task = taskExec;
+    }
+    
+    task->expected_end_time = et;
+}
+
+int task_get_eet(task_t *task)
+{
+    if(!task)
+    {
+        task = taskExec;
+    }
+
+    return (task->expected_end_time);
+}
+
+int task_get_ret(task_t *task)
+{
+    if(!task)
+    {
+        task = taskExec;
+    }
+
+    return (task->expected_end_time - task->running_time);
+    
+}
+
+task_t * scheduler() {
+    // STRF scheduler
+    if ( readyQueue != NULL ) {
+        task_t* next_task = readyQueue;
+        task_t* selector = readyQueue->next;
+        while(selector && selector != readyQueue)
+        {
+            if(task_get_ret(next_task) > task_get_ret(selector))
+            {
+                next_task = selector;
+            }
+            selector = selector->next;
+        }
+        next_task->quantum = 20;
+
+        if(next_task->id == taskDisp->id)
+            preemption = 0;
+        else
+            preemption = 1;
+            
+        next_task->activations++;
+
+        return next_task;
+    }
+    return NULL;
+}
+
+// ****************************************************************************
+
+void after_ppos_init () {
+    // put your customization here
+
+    task_set_eet(taskExec, 999);
+    timer_action.sa_handler = timer_handler ;
+    sigemptyset (&timer_action.sa_mask) ;
+    timer_action.sa_flags = 0 ;
+    if (sigaction (SIGALRM, &timer_action, 0) < 0)
+    {
+      perror ("Erro em sigaction: ") ;
+      exit (1) ;
+    }
+
+    timer.it_value.tv_usec = 1000 ;   
+    timer.it_value.tv_sec  = 0 ;      
+    timer.it_interval.tv_usec = 1000 ;
+    timer.it_interval.tv_sec  = 0 ;
+
+    if (setitimer (ITIMER_REAL, &timer, 0) < 0)
+    {
+      perror ("Erro em setitimer: ") ;
+      exit (1) ;
+    }
+#ifdef DEBUG
+    printf("\ninit - AFTER");
+#endif
+}
+
+void after_task_create (task_t *task ) {
+    // put your customization here
+    task->start_time = systime();
+    task->activations = 0;
+#ifdef DEBUG
+    printf("\ntask_create - AFTER - [%d]", task->id);
+#endif
+}
+
+void before_task_exit () {
+    // put your customization here
+    printf("Task %d exit: execution time %d ms, processor time %d ms, %d activations\n\n", taskExec->id, systime() - taskExec->start_time, taskExec->running_time, taskExec->activations);
+#ifdef DEBUG
+    printf("\ntask_exit - BEFORE - [%d]", taskExec->id);
+#endif
+}
